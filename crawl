@@ -1,0 +1,301 @@
+#/bin/bash
+########################################################################
+#
+#
+#                       script: crawl   
+#                           by: Dan Purgert    
+#                    copyright: 2016
+#                      version: 0.1
+#                         date: Tue May  3 19:41:19 EDT 2016
+#                      purpose: Pointless text-based adventure game. 
+#                             : Mainly a proof-of-concept before I try
+#                             : making a more extensive one. 
+#
+#                      license: GPL v2 (only)
+#                   repository: http://github.com/dpurgert
+#
+#
+########################################################################
+
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation; either version 2
+#of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+#02110-1301, USA.
+
+VERSION="0.3"
+GPL="http://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html#SEC3"
+
+#kill the cursor
+printf "\e[?25l"
+
+if [ "$1" = "-h" ]; then
+   printf "   Dungeon Crawl
+   -------------
+
+   This is a relatively simple "Dungeon Crawler" proof of concept for a
+   text-based adventure game (think Zork or similar). Enjoy.
+
+   Options:
+     -h    Print this help, and exit.
+
+   USAGE:
+     crawl   
+
+   -------------"
+   printf "\e[?25h" #show cursor
+   exit 0
+fi
+
+locx=0
+locy=-1
+locz=0
+skel=22
+declare -A str
+str[0,-1]="You walk back to the entrance."
+
+str[0,0]="You walk into the dungeon. The hallway continues to
+the east or the west, you can't see how far. The exit is to the south."
+
+str[-1,0]="The hallway creates a corner with another hallway. 
+You can't see how far it continues.
+
+Obvious exits: North or East".
+
+str[1,0]="The hallway creates a corner with another hallway. 
+You can't see how far it continues.
+
+Obvious exits: North or West".
+
+str[-1,1]="You continue for 20 feet.  The hallway continues in this
+direction, or you can head back the way you came."
+
+str[1,1]="You continue for 20 feet.  The hallway continues in this
+direction, or you can head back the way you came"
+
+str[-1,2]="The hallway creates a corner with another hallway. 
+You can't see how far it continues.
+
+Obvious exits: South or East".
+
+str[1,2]="The hallway creates a corner with another hallway. 
+You can't see how far it continues.
+
+Obvious exits: South or West".
+
+str[0,2]="The hallway continues to the East or West.  There is a door in
+the southern wall.
+
+Obvious exits: East, West or South."
+
+str[0,1]="You enter a room that looks to be 20 feet square."
+
+treas=false
+door=false
+
+clear
+
+printf "\n\n\n\n
+Dungeon Crawl version $VERSION, Copyright (C) 2016 Dan Purgert.
+This program comes with ABSOLUTELY NO WARRANTY; for details see the GNU
+GPL.  This is free software, and you are welcome to redistribute it
+under certain conditions; see:\n$GPL\nfor details.\n\n\n"
+
+printf "
+This program designed for an 80x24 terminal window.  If your terminal is
+larger / smaller than this, things will probably end up looking funny.
+Sorry.\n\n\n"
+
+read -n1 -p "Press any key to continue"
+clear
+
+printf "\033[6;0H\033[1mYou have entered the dungeon.
+\033[0mIt is dark inside.  You carry a torch, and can see 20 feet.
+
+To the north is the dungeon, to the south is the exit.\n"
+
+while [ $locy -eq -1 ] ; do
+  read -p "What to do?" "chk"
+
+  case "$chk" in
+    SOUTH|south|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+      locy=$(($locy - 1))
+       ;;
+    NORTH|north|[Gg][Oo]\ [Nn][Oo][Rr][Tt][Hh])
+      locy=$(($locy + 1))
+       ;;
+    *)
+      printf "\nI'm sorry, I can't do that."
+       ;;
+  esac
+done
+
+while [ $locy -gt -2 ]
+do
+  #stuff
+  clear
+  printf "\033[6;0H"
+  printf %s "${str[$locx,$locy]}"
+  printf "\n"
+  if [[ $locx -eq 0 && $locy -eq 1 ]]; then
+    if [ $skel -gt 0 ] ;then
+      printf "\033[10;0H"
+      printf "\033[1mA skeleton attacks!\033[0m\nYou draw your sword."
+      while [ $skel -gt 0 ] 
+      do
+        atk=$RANDOM
+        let "atk %= 8"
+        skel=$((${skel} - ${atk}))
+        sleep 3s
+        printf "\nYou attack the skeleton!  $atk damage dealt.\n"
+        printf "Skeleton has $skel HP left.\n"
+      done
+      printf "The skeleton collapses to a pile of bones.\n"
+      printf "You see that it was guarding some gold.\n"
+    fi
+  fi
+  printf "\n"
+  read -p "What to do?" "chk"
+  if [[ $locx -eq 0 && $locy -eq 0 ]] ; then
+    case "$chk" in
+      [Ss][Oo][Uu][Tt][Hh]|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+        locy=$(($locy - 1))
+        ;;
+      [Ee][Aa][Ss][Tt]|[Gg][Oo]\ [Ee][Aa][Ss][Tt])
+        locx=$(($locx + 1))
+        ;;
+      [Ww][Ee][Ss][Tt]|[Gg][Oo]\ [Ww][Ee][Ss][Tt])
+        locx=$(($locx - 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+    esac
+  elif [[ $locx -eq 1 && $locy -eq 0 ]] ; then
+    case "$chk" in
+      [Nn][Oo][Rr][Tt][Hh]|[Gg][Oo]\ [Nn][Oo][Rr][Tt][Hh])
+        locy=$(($locy + 1))
+        ;;
+      [Ww][Ee][Ss][Tt]|[Gg][Oo]\ [Ww][Ee][Ss][Tt])
+        locx=$(($locx - 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+    esac
+  elif [[  $locx -eq -1 && $locy -eq 0 ]] ; then
+    case "$chk" in
+      [Nn][Oo][Rr][Tt][Hh]|[Gg][Oo]\ [Nn][Oo][Rr][Tt][Hh])
+        locy=$(($locy + 1))
+        ;;
+      [Ee][Aa][Ss][Tt]|[Gg][Oo]\ [Ee][Aa][Ss][Tt])
+        locx=$(($locx + 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+      esac
+  elif [[ $locx -eq 1 && $locy -eq 2 ]] ; then
+    case "$chk" in
+      [Ss][Oo][Uu][Tt][Hh]|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+        locy=$(($locy - 1))
+        ;;
+      [Ww][Ee][Ss][Tt]|[Gg][Oo]\ [Ww][Ee][Ss][Tt])
+        locx=$(($locx - 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+    esac
+  elif [[  $locx -eq -1 && $locy -eq 2 ]] ; then
+    case "$chk" in
+      [Ss][Oo][Uu][Tt][Hh]|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+        locy=$(($locy - 1))
+        ;;
+      [Ee][Aa][Ss][Tt]|[Gg][Oo]\ [Ee][Aa][Ss][Tt])
+        locx=$(($locx + 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+      esac
+  elif [[  $locx -eq 0 && $locy -eq 2 ]] ; then
+    case "$chk" in
+      [Ss][Oo][Uu][Tt][Hh]|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+        if [ $door = false ] ; then
+          printf "The door is closed."
+          sleep 1s
+        else
+          locy=$(($locy - 1))
+        fi
+        ;;
+      [Ee][Aa][Ss][Tt]|[Gg][Oo]\ [Ee][Aa][Ss][Tt])
+        locx=$(($locx + 1))
+        ;;
+      [Ww][Ee][Ss][Tt]|[Gg][Oo]\ [Ww][Ee][Ss][Tt])
+        locx=$(($locx - 1))
+        ;;
+      [Oo][Pp][Ee][Nn]\ [Dd][Oo][Oo][Rr])
+        printf "You open the door."
+        sleep 1s
+        door=true ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+      esac
+  elif [[  $locx -eq 0 && $locy -eq 1 ]] ; then
+    case "$chk" in
+      [Nn][Oo][Rr][Tt][Hh]|[Gg][Oo]\ [Nn][Oo][Rr][Tt][Hh])
+        locy=$(($locy + 1))
+        ;;
+      [Tt][Aa][Kk][Ee]\ [Gg][Oo][Ll][Dd])
+        printf "You pick up the gold."
+        sleep 1s
+        treas=true ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+         sleep 1s
+         ;;
+    esac
+  else
+    case "$chk" in
+      [Ss][Oo][Uu][Tt][Hh]|[Gg][Oo]\ [Ss][Oo][Uu][Tt][Hh])
+        locy=$(($locy - 1))
+        ;;
+      [Nn][Oo][Rr][Tt][Hh]|[Gg][Oo]\ [Nn][Oo][Rr][Tt][Hh])
+        locy=$(($locy + 1))
+        ;;
+      *)
+        printf "\nI'm sorry, I can't do that."
+        sleep 1s
+        ;;
+    esac
+  fi
+done
+
+clear
+printf "\033[10;0H"
+if [ $treas = true ] ; then
+  printf "\033[1mYou have successfully retrieved the treasure!\033[0m"
+else
+  printf "\033[1mYou have left the dungeon.\033[0m"
+fi
+
+sleep 5s
+printf "\e[?25h\n" #show cursor
+clear
